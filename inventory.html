@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block title %}Инвентарь{% endblock %}
+{% block content %}
+<!-- Секция с таблицей -->
+<div class="w-2/3 p-4 grid gap-4 bg-white border rounded-lg shadow-lg">
+    <h2 class="text-xl font-semibold text-center text-primary-600">Ваш инвентарь</h2>
+    <hr>
+    <table class="border border-gray-300 border-collapse">
+        <thead>
+            <tr class="bg-gray-50 border border-gray-300">
+                <th class="p-2 text-center">#</th>
+                <th class="p-2 text-start">Предмет</th>
+                <th class="p-2 text-start">Количество</th>
+                <th class="p-2 text-start">Состояние</th>
+                <th class="p-2 text-center"></th>
+            </tr>
+        </thead>
+        <tbody id="inventoryTableBody">
+            {% for product in products %}
+            <tr class="border-b border-gray-300 hover:bg-primary-50 transition">
+                <th class="p-2 text-center">{{ forloop.counter }}</th>
+                <td class="p-2 text-start break-all">{{ product.name }}</td>
+                <td class="p-2 text-start">{{ product.quantity|default:"1" }}</td>
+                <td class="p-2">
+                    {% if product.state == 'inactive' %}
+                    <select name="state" class="px-1 bg-gray-50 border border-gray-300 focus:outline focus:outline-primary-500 transition" required>
+                        <option selected value="inactive">В запасе</option>
+                        <option value="active">Используется</option>
+                        <option value="broken">Сломано</option>
+                    </select>
+                    {% elif product.state == 'active' %}
+                    <select name="state" class="px-1 bg-gray-50 border border-gray-300 focus:outline focus:outline-primary-500 transition" required>
+                        <option value="inactive">В запасе</option>
+                        <option selected value="active">Используется</option>
+                        <option value="broken">Сломано</option>
+                    </select>
+                    {% elif product.state == 'broken' %}
+                    <select name="state" class="px-1 bg-gray-50 border border-gray-300 focus:outline focus:outline-primary-500 transition" required>
+                        <option value="inactive">В запасе</option>
+                        <option value="active">Используется</option>
+                        <option selected value="broken">Сломано</option>
+                    </select>
+                    {% endif %}
+                </td>
+                <td class="p-2 flex justify-end">
+                    <button
+                        name="verification"
+                        title="Одобрить"
+                        value="accept"
+                        class="w-6 h-6 bg-green-500 hover:bg-green-700 text-white rounded shadow-md transition">
+                        ✓
+                    </button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr class="border-y border-gray-300">
+                <td colspan="4" class="py-2 text-center text-gray-400 transition">У вас пока нет инвентаря.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<!-- Форма добавления инвентаря -->
+<div class="w-1/3 p-4 grid gap-4 bg-white border rounded-lg shadow-lg">
+    <h2 class="text-xl font-semibold text-center text-primary-600">Создать заявку</h2>
+    <hr>
+    <form method="post" class="gap-4 grid">
+        {% csrf_token %}
+        <div id="inventoryFormBody" class="gap-2 grid">
+            <div name="position" class="p-2 gap-2 grid bg-gray-50 border rounded">
+                <input
+                    name="name"
+                    list="inventoryList"
+                    type="text"
+                    placeholder="Предмет"
+                    class="px-1 bg-white text-gray-800 text-sm placeholder-gray-400 border border-gray-300 rounded focus:outline focus:outline-primary-500 transition"
+                    maxlength="256"
+                    required
+                >
+                <input
+                    name="quantity"
+                    type="number"
+                    placeholder="Количество"
+                    class="px-1 bg-white text-gray-800 text-sm placeholder-gray-400 border border-gray-300 rounded focus:outline focus:outline-primary-500 transition"
+                    min="1"
+                    max="999999999"
+                    step="1"
+                    required
+                >
+                <select
+                    name="action"
+                    class="px-1 bg-gray-50 text-sm border border-gray-300 rounded focus:outline focus:outline-primary-500 transition"
+                >
+                    <option value="request">
+                        Запросить
+                    </option>
+                    <option value="drop">
+                        Убрать
+                    </option>
+                </select>
+                <button
+                    type="button"
+                    class="bg-red-50 hover:bg-red-100 text-center text-sm text-red-500 border border-red-300 rounded cursor-pointer transition"
+                >
+                    Удалить
+                </button>
+            </div>
+            <button
+                id="addButton"
+                type="button"
+                class="mx-2 bg-green-50 hover:bg-green-100 text-center text-sm text-green-500 border border-green-300 rounded cursor-pointer transition"
+            >
+                Добавить
+            </button>
+        </div>
+        <button
+            type="submit"
+            class="w-full p-2 bg-primary-600 hover:bg-primary-700 text-center text-white font-semibold rounded shadow-md transition">
+            Отправить
+        </button>
+    </form>
+</div>
+{% endblock %}
+{% block datalists %}
+<datalist id="inventoryList">
+    {% for product in all_products %}
+    <option value="{{ product.name }}">
+        {% if product.state == 'inactive' %}В запасе:
+        {% elif product.state == 'active' %}Используется:
+        {% elif product.state == 'broken' %}Сломано:
+        {% endif %}
+        {{ product.quantity|default:"1" }}
+    </option>
+    {% endfor %}
+</datalist>
+{% endblock %}
+{% block scripts %}
+<script>
+    const inventoryFormBody = document.getElementById("inventoryFormBody");
+    const position = document.getElementsByName("position")[0];
+    const addButton = document.getElementById("addButton");
+
+    addButton.addEventListener("click", event => addPosition());
+
+    function addPosition() {
+        const new_position = position.cloneNode(true);
+        const remove_button = new_position.getElementsByTagName("button")[0];
+        
+        inputs = new_position.getElementsByTagName("input");
+
+        for (let i = 0; i < inputs.length; i++) {
+            inputs[i].value = "";
+        }
+
+        remove_button.addEventListener("click", event => removePosition(remove_button))
+
+        inventoryFormBody.appendChild(new_position);
+        inventoryFormBody.appendChild(addButton);
+    }
+
+    function removePosition(button) {
+        button.parentNode.remove();
+    }
+</script>
+
+<script>
+    const quantityInputs = document.getElementsByName("quantity");
+
+    for (let i = 0; i < quantityInputs.length; i++) {
+        const input = quantityInputs[i];
+
+        input.addEventListener("input", (event) => {
+            if (input.validity.rangeUnderflow || input.validity.stepMismatch) {
+                input.setCustomValidity("Введите натуральное число!");
+            }
+        });
+    }
+</script>
+
+<script>
+    const inventoryTableBody = document.getElementById("inventoryTableBody");
+    const trs = inventoryTableBody.getElementsByTagName("tr");
+    const selects = inventoryTableBody.getElementsByTagName("select");
+    const buttons = inventoryTableBody.getElementsByTagName("button");
+
+    for (let i = 0; i < trs.length; i++) {
+        selects[i].addEventListener("input", e => rowChanged(trs[i]));
+        buttons[i].addEventListener("click", e => rowConfirm(trs[i]));
+    }
+
+    function rowChanged(row) {
+        row.classList.remove("bg-green-50");
+        row.classList.remove("hover:bg-green-100");
+        row.classList.remove("hover:bg-primary-50");
+        row.classList.add("bg-amber-50");
+        row.classList.add("hover:bg-amber-100");
+    }
+
+    function rowConfirm(row) {
+        row.classList.remove("bg-amber-50");
+        row.classList.remove("hover:bg-amber-100");
+        row.classList.remove("hover:bg-primary-50");
+        row.classList.add("bg-green-50");
+        row.classList.add("hover:bg-green-100");
+    }
+</script>
+{% endblock %}

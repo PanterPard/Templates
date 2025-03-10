@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}404{% endblock %}
+{% block content %}
+<div class="grid">
+    <h1 class="pb-10 text-primary-500 text-center text-9xl font-extrabold">404</h1>
+    <p class="p-2 text-center font-semibold text-4xl">Ой! Страница не найдена.</p>
+    <p class="p-2 text-xl text-center">
+        Кажется, вы заблудились. Вернитесь на
+        <a
+            href="{% url 'inventory' %}"
+            class="text-primary-600 hover:text-primary-800 transition">
+            главную
+        </a>
+        страницу.
+    </p>
+</div>
+{% endblock %}

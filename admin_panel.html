@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% block title %}Админ-панель{% endblock %}
+{% block content %}
+<!-- Карточка заявок на инвентарь -->
+<div class="w-1/3 p-4 grid gap-4 bg-white border rounded-lg shadow-lg">
+    <h2 class="text-xl font-semibold text-center text-primary-600">Инвентарные заявки</h2>
+    <hr>
+    <table class="w-full border border-gray-300 border-collapse">
+        <tbody>
+            {% for application in applications %}
+                {% if application.status == "unseen" %}
+                <tr id="{{ forloop.counter }}" class="p-2 border-t hover:bg-primary-50 transition">
+                    <td class="p-2">
+                        <p class="break-words">
+                            {{ application.owner.first_name }}
+                            {{ application.owner.last_name }}
+                            —
+                            {% if application.action == 'request' %}
+                            <span class="text-green-500">Добавление</span>
+                            {% elif application.action == 'drop' %}
+                            <span class="text-red-500">Удаление</span>
+                            {% endif %}
+                        </p>
+                        <p class="text-black font-medium break-all">
+                            <span class="text-primary-700">{{ application.quantity }}</span>
+                            •
+                            {{ application.name }}
+                        </p>
+                    </td>
+                    <td class="p-2">
+                        <form method="post" class="gap-2 flex justify-end items-center">
+                            {% csrf_token %}
+                            <button
+                                name="approve"
+                                title="Отклонить"
+                                value="reject"
+                                class="w-6 h-6 bg-red-500 hover:bg-red-700 text-white rounded shadow-md transition">
+                                ✕
+                            </button>
+                            <button
+                                name="approve"
+                                title="Одобрить"
+                                value="accept"
+                                class="w-6 h-6 bg-green-500 hover:bg-green-700 text-white rounded shadow-md transition">
+                                ✓
+                            </button>
+                            <input
+                            class="hidden"
+                            name='ident'
+                            value="{{ application.ident }}"
+                            >
+                        </form>
+                    </td>
+                </tr>
+                {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<!-- Карточка выдачи инвентаря -->
+<div class="w-1/3 p-4 grid gap-4 bg-white border rounded-lg shadow-lg">
+    <h2 class="text-xl font-semibold text-center text-primary-600">Выдать/забрать инвентарь</h2>
+    <hr>
+    <form method="post" class="gap-4 grid">
+        {% csrf_token %}
+        <input
+            name="username"
+            list="usersList"
+            type="text"
+            class="px-2 py-1 text-gray-800 placeholder-gray-400 bg-gray-100 border border-gray-300 rounded focus:outline focus:outline-primary-500 transition" 
+            placeholder="Пользователь"
+        >
+        <div id="inventoryFormBody" class="gap-2 grid">
+            <div name="position" class="p-2 gap-2 grid bg-gray-50 border rounded">
+                <input
+                    name="name"
+                    list="inventoryList"
+                    type="text"
+                    placeholder="Предмет"
+                    class="px-1 bg-white text-gray-800 text-sm placeholder-gray-400 border border-gray-300 rounded focus:outline focus:outline-primary-500 transition"
+                    maxlength="256"
+                    required
+                >
+                <input
+                    name="quantity"
+                    type="number"
+                    placeholder="Количество"
+                    class="px-1 bg-white text-gray-800 text-sm placeholder-gray-400 border border-gray-300 rounded focus:outline focus:outline-primary-500 transition"
+                    min="1"
+                    step="1"
+                    required
+                >
+                <select
+                    name="action"
+                    class="px-1 bg-gray-50 text-sm border border-gray-300 rounded focus:outline focus:outline-primary-500 transition"
+                >
+                    <option value="add">
+                        Добавить
+                    </option>
+                    <option value="delete">
+                        Убрать
+                    </option>
+                </select>
+                <select class="px-1 bg-gray-50 text-sm border border-gray-300 rounded focus:outline focus:outline-primary-500 transition" name="state">
+                    <option value="active">
+                        Используется
+                    </option> 
+                    <option value="inactive">
+                        В запасе
+                    </option> 
+                    <option value="broken">
+                        Сломано
+                    </option> 
+                </select>
+                <button
+                    type="button"
+                    class="bg-red-50 hover:bg-red-100 text-center text-sm text-red-500 border border-red-300 rounded cursor-pointer transition"
+                >
+                    Удалить
+                </button>
+            </div>
+            <button
+                id="addButton"
+                type="button"
+                class="mx-2 bg-green-50 hover:bg-green-100 text-center text-sm text-green-500 border border-green-300 rounded cursor-pointer transition"
+            >
+                Добавить
+            </button>
+        </div>
+        <button
+            type="submit"
+            class="w-full p-2 bg-primary-600 hover:bg-primary-700 text-center text-white font-semibold rounded shadow-md transition">
+            Отправить
+        </button>
+    </form>
+</div>
+<!-- Карточка заявок на регистрацию -->
+<div class="w-1/3 p-4 grid gap-4 bg-white border rounded-lg shadow-lg">
+    <h2 class="text-xl font-semibold text-center text-primary-600">Заявки на регистрацию</h2>
+    <hr>
+    <table class="w-full border border-gray-300 border-collapse">
+        <thead>
+            <tr class="bg-gray-50 border border-gray-300">
+                <th class="px-4 py-2 text-start">ФИО</th>
+                <th class="px-4 py-2 text-start">Логин</th>
+                <th class="px-4 py-2 text-start"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            {% if not user.verified %}
+            <tr class="border-b border-gray-300 hover:bg-primary-50 transition">
+                <td class="p-2 text-start break-words">
+                    {{ user.first_name }} {{ user.last_name }}
+                </td>
+                <td class="p-2 text-start break-words">
+                    {{ user.username }}
+                </td>
+                <td class="p-2 flex justify-end items-center">
+                    <form method="post">
+                        {% csrf_token %}
+                        <button
+                            name="verification"
+                            title="Одобрить"
+                            value="accept"
+                            class="w-6 h-6 bg-green-500 hover:bg-green-700 text-white rounded shadow-md transition">
+                            ✓
+                        </button>
+                        <input 
+                            type="hidden"
+                            name="username"
+                            value="{{ user.username }}"
+                        >
+                    </form>
+                </td>
+            </tr>
+            {% endif %}
+            {% empty %}
+            <tr class="border-y border-gray-300">
+                <td colspan="4" class="py-2 text-center text-gray-400 transition">Заявки отсутствуют.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+{% block datalists %}
+<datalist id="inventoryList">
+    {% for product in products %}
+    <option value="{{ product.name }}">
+        {% if product.state == 'inactive' %}В запасе:
+        {% elif product.state == 'active' %}Используется:
+        {% elif product.state == 'broken' %}Сломано:
+        {% endif %}
+        {{ product.quantity|default:"1" }}
+    </option>
+    {% endfor %}
+</datalist>
+
+<datalist id="usersList">
+    {% for user in users %}
+    <option value="{{ user.username }}">
+        {{ user.first_name}} {{ user.last_name }}
+    </option>
+    {% endfor %}
+</datalist>
+{% endblock %}
+{% block scripts %}
+<script>
+    const inventoryFormBody = document.getElementById("inventoryFormBody");
+    const position = document.getElementsByName("position")[0];
+    const addButton = document.getElementById("addButton");
+
+    addButton.addEventListener("click", event => addPosition());
+
+    function addPosition() {
+        const new_position = position.cloneNode(true);
+        const remove_button = new_position.getElementsByTagName("button")[0];
+        
+        inputs = new_position.getElementsByTagName("input");
+
+        for (let i = 0; i < inputs.length; i++) {
+            inputs[i].value = "";
+        }
+
+        remove_button.addEventListener("click", event => removePosition(remove_button))
+
+        inventoryFormBody.appendChild(new_position);
+        inventoryFormBody.appendChild(addButton);
+    }
+
+    function removePosition(button) {
+        button.parentNode.remove();
+    }
+</script>
+
+<script>
+    function toggleCollapse(id) {
+        const content = document.getElementById(id);
+        content.classList.toggle("hidden");
+    }
+</script>
+
+<script>
+    const path = window.location.pathname;
+    const page = path.slice(1, -1);
+    const activeButton = document.getElementById(page);
+
+    activeButton.classList.add("bg-gray-100");
+</script>
+{% endblock %}
